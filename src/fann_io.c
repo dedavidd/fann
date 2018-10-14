@@ -76,6 +76,7 @@ int fann_save_internal(struct fann *ann, const char *configuration_file, unsigne
 	return retval;
 }
 
+void fann_save_train_meta(struct fann *ann, const char *configuration_file);
 /* INTERNAL FUNCTION
    Used to save the network to a file descriptor.
  */
@@ -337,10 +338,49 @@ int fann_save_internal_fd(struct fann *ann, FILE * conf, const char *configurati
 	}
 	fprintf(conf, "\n");
 
+  fann_save_train_meta(ann, configuration_file);
 	return calculated_decimal_point;
 }
 
+void fann_save_train_meta(struct fann *ann, const char *configuration_file){
+  // davidd
+  fann_type *prev_train_slopes=ann->prev_train_slopes;
+  fann_type *prev_steps=ann->prev_steps;
+  if (ann->prev_train_slopes==NULL || ann->prev_steps==NULL) {
+    return;
+  }
+  char configuration_file_train_meta[1024];
+  sprintf(configuration_file_train_meta, "%s.trainmetadata", configuration_file);
+	FILE *conf = fopen(configuration_file_train_meta, "w+");
+
+	if(!conf)
+	{
+		fann_error((struct fann_error *) ann, FANN_E_CANT_OPEN_CONFIG_W, configuration_file);
+		return ;
+	}
+
+  // opened file, now write data
+  //
+
+  fprintf(conf, "prev_train_slopes=");
+  for (int i=0;i < ann->total_connections;i++) {
+    fprintf(conf, "(" FANNPRINTF ") ", prev_train_slopes[i]);
+  }
+	fprintf(conf, "\n");
+
+  fprintf(conf, "prev_steps=");
+  for (int i=0;i < ann->total_connections;i++) {
+    fprintf(conf, "(" FANNPRINTF ") ", prev_steps[i]);
+  }
+	fprintf(conf, "\n");
+
+
+	fclose(conf);
+	return;
+}
+
 struct fann *fann_create_from_fd_1_1(FILE * conf, const char *configuration_file);
+int fann_create_train_meta(struct fann *ann, const char *configuration_file);
 
 #define fann_scanf(type, name, val) \
 { \
@@ -399,11 +439,10 @@ struct fann *fann_create_from_fd(FILE * conf, const char *configuration_file)
 	{
 #ifdef FIXEDFANN
 		if(strncmp(read_version, "FANN_FIX_1.1\n", strlen("FANN_FIX_1.1\n")) == 0)
-		{
 #else
 		if(strncmp(read_version, "FANN_FLO_1.1\n", strlen("FANN_FLO_1.1\n")) == 0)
-		{
 #endif
+    {
 			free(read_version);
 			return fann_create_from_fd_1_1(conf, configuration_file);
 		}
@@ -650,12 +689,62 @@ struct fann *fann_create_from_fd(FILE * conf, const char *configuration_file)
 		connected_neurons[i] = first_neuron + input_neuron;
 	}
 
+  fann_create_train_meta(ann, configuration_file);
 #ifdef DEBUG
 	printf("output\n");
 #endif
 	return ann;
 }
 
+
+
+/* INTERNAL FUNCTION
+   loadtraindata from a configuration file descriptor.
+ */
+int fann_create_train_meta(struct fann *ann, const char *configuration_file)
+{
+  // davidd
+//  printf("loaded %d layers\n",ann->last_layer);
+  unsigned int i=0;
+  //return 0;
+  char configuration_file_train_meta[1024];
+  sprintf(configuration_file_train_meta, "%s.trainmetadata", configuration_file);
+	FILE *conf = fopen(configuration_file_train_meta, "r");
+
+	if(!conf)
+	{
+    printf("no trainmetadata found\n");
+    // dont worry if this file doesnt exist.
+    return 0;
+	}
+  // opened file, now read data
+  //
+  printf("loading trainmetadata \n");
+  fann_clear_train_arrays(ann);
+  fann_type *prev_train_slopes=ann->prev_train_slopes;
+  fann_type *prev_steps=ann->prev_steps;
+
+  // printf("Loading old trainslopes\n");
+	if(fscanf(conf, "prev_train_slopes=") != 0) 
+    return 0;
+  for (i=0;i < ann->total_connections;i++) {
+		if(fscanf(conf, "(" FANNSCANF ") ", &prev_train_slopes[i]) != 1)
+    {
+      return 0;
+    }
+  }
+
+  //printf("Loading old prev_steps\n");
+	if(fscanf(conf, "prev_steps=") != 0) 
+    return 0;
+  for (i=0;i < ann->total_connections;i++) {
+		if(fscanf(conf, "(" FANNSCANF ") ", &prev_steps[i]) != 1)
+    {
+      return 0;
+    }
+  }
+
+}
 
 /* INTERNAL FUNCTION
    Create a network from a configuration file descriptor. (backward compatible read of version 1.1 files)
