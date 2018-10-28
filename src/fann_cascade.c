@@ -217,6 +217,7 @@ float fann_train_outputs_epoch(struct fann *ann, struct fann_train_data *data)
 	switch (ann->training_algorithm)
 	{
 		case FANN_TRAIN_RPROP:
+		case FANN_TRAIN_RMSPROP:
 			fann_update_weights_irpropm(ann, (ann->last_layer - 1)->first_neuron->first_con,
 										ann->total_connections);
 			break;
@@ -668,6 +669,7 @@ void fann_update_candidate_weights(struct fann *ann, unsigned int num_data)
 	switch (ann->training_algorithm)
 	{
 		case FANN_TRAIN_RPROP:
+		case FANN_TRAIN_RMSPROP:
 			fann_update_weights_irpropm(ann, first_cand->first_con,
 										last_cand->last_con + ann->num_output);
 			break;

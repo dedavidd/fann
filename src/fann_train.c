@@ -572,7 +572,7 @@ void fann_clear_train_arrays(struct fann *ann)
 		}
 	}
 
-	if(ann->training_algorithm == FANN_TRAIN_RPROP)
+	if(ann->training_algorithm == FANN_TRAIN_RPROP || ann->training_algorithm == FANN_TRAIN_RMSPROP)
 	{
 		delta_zero = ann->rprop_delta_zero;
 		
@@ -708,6 +708,70 @@ void fann_update_weights_quickprop(struct fann *ann, unsigned int num_data,
 }
 
 /* INTERNAL FUNCTION
+   The RMSprop algorithm
+   with adaptive momentum (adam)
+*/
+
+void fann_update_weights_rmsprop(struct fann *ann, unsigned int first_weight, unsigned int past_end)
+{
+	fann_type *train_slopes = ann->train_slopes;
+	fann_type *weights = ann->weights;
+	// fann_type *prev_steps = ann->prev_steps;
+	// fann_type *prev_train_slopes = ann->prev_train_slopes;
+	fann_type *prev_Vdw = ann->prev_steps;
+	fann_type *prev_Sdw = ann->prev_train_slopes;
+
+	fann_type divisor, slope,  next_step, Vdw,Sdw;
+
+	/* store some variabels local for fast access */
+
+  unsigned int epoch = ann->sarprop_epoch+1;
+
+	//const float learning_rate = ann->learning_rate/sqrt(epoch+1);
+	const float learning_rate = ann->learning_rate;
+  float beta1 = 0.9;
+  float beta2 = 0.999;
+  float corr_Sdw = 1.0;
+  float corr_Vdw = 1.0;
+  if (epoch < 1000) {
+      for (int jjj=0;jjj<epoch;jjj++) {
+          corr_Sdw *= beta1;
+          corr_Vdw *= beta2;
+      }
+      corr_Sdw = 1.0/(1.0 - corr_Sdw);
+      corr_Vdw = 1.0/(1.0 - corr_Vdw);
+  }
+
+
+	unsigned int i = first_weight;
+
+	for(; i != past_end; i++)
+  {
+      slope = train_slopes[i];
+      Sdw = prev_Sdw[i] * beta1 + (1.0 - beta1) * slope;
+      Vdw = prev_Vdw[i] * beta2 + (1.0 - beta2) * (slope*slope);
+
+      divisor = sqrt(corr_Vdw*Vdw) + 0.000001;
+      next_step = learning_rate * (corr_Sdw * Sdw) / divisor;
+      weights[i] += next_step;
+
+      if(ann->training_algorithm == FANN_TRAIN_RPROP || ann->training_algorithm == FANN_TRAIN_RMSPROP)
+      {
+      }
+      if(weights[i] > 1500)
+          weights[i] = 1500;
+      if(weights[i] < -1500)
+          weights[i] = -1500;
+
+      /* update global data arrays */
+      prev_Vdw[i] = Vdw;
+      prev_Sdw[i] = Sdw;
+  }
+}
+
+
+
+/* INTERNAL FUNCTION
    The iRprop- algorithm
 */
 void fann_update_weights_irpropm(struct fann *ann, unsigned int first_weight, unsigned int past_end)
@@ -722,13 +786,14 @@ void fann_update_weights_irpropm(struct fann *ann, unsigned int first_weight, un
 	float increase_factor = ann->rprop_increase_factor;	/*1.2; */
 	float decrease_factor = ann->rprop_decrease_factor;	/*0.5; */
 	float delta_min = ann->rprop_delta_min;	/*0.0; */
+	float delta_zero = ann->rprop_delta_zero;	/*0.1; */
 	float delta_max = ann->rprop_delta_max;	/*50.0; */
 
 	unsigned int i = first_weight;
 
 	for(; i != past_end; i++)
 	{
-		prev_step = fann_max(prev_steps[i], (fann_type) 0.0001);	/* prev_step may not be zero because then the training will stop */
+		prev_step = fann_max(prev_steps[i], (fann_type) delta_zero * 0.00001);	/* prev_step may not be zero because then the training will stop */
 		slope = train_slopes[i];
 		prev_slope = prev_train_slopes[i];
 
@@ -738,21 +803,35 @@ void fann_update_weights_irpropm(struct fann *ann, unsigned int first_weight, un
 			next_step = fann_min(prev_step * increase_factor, delta_max);
 		else
 		{
+        // do step back
+        if(slope > 0)
+        {
+            weights[i] += prev_step*0.5;
+            if(weights[i] > 1500)
+                weights[i] = 1500;
+        }
+        else if(slope < 0)
+        {
+            weights[i] -= prev_step*0.5;
+            if(weights[i] < -1500)
+                weights[i] = -1500;
+        }
+      
 			next_step = fann_max(prev_step * decrease_factor, delta_min);
 			slope = 0;
 		}
 
-		if(slope < 0)
-		{
-			weights[i] -= next_step;
-			if(weights[i] < -1500)
-				weights[i] = -1500;
-		}
-		else
+		if(slope > 0)
 		{
 			weights[i] += next_step;
 			if(weights[i] > 1500)
 				weights[i] = 1500;
+		}
+		else if(slope < 0)
+		{
+			weights[i] -= next_step;
+			if(weights[i] < -1500)
+				weights[i] = -1500;
 		}
 
 		/*if(i == 2){

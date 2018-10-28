@@ -88,6 +88,8 @@ void fann_update_weights_quickprop(struct fann *ann, unsigned int num_data,
 								   unsigned int first_weight, unsigned int past_end);
 void fann_update_weights_batch(struct fann *ann, unsigned int num_data, unsigned int first_weight,
 							   unsigned int past_end);
+void fann_update_weights_rmsprop(struct fann *ann, unsigned int first_weight,
+								 unsigned int past_end);
 void fann_update_weights_irpropm(struct fann *ann, unsigned int first_weight,
 								 unsigned int past_end);
 void fann_update_weights_sarprop(struct fann *ann, unsigned int epoch, unsigned int first_weight,

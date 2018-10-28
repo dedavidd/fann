@@ -26,6 +26,7 @@
 #include "config.h"
 #include "fann.h"
 #include "fann_data.h"
+#include "fann_internal.h"
 
 /* Create a network from a configuration file.
  */
@@ -373,6 +374,7 @@ void fann_save_train_meta(struct fann *ann, const char *configuration_file){
     fprintf(conf, "(" FANNPRINTF ") ", prev_steps[i]);
   }
 	fprintf(conf, "\n");
+  fprintf(conf, "sarprop_epoch=%u\n",ann->sarprop_epoch);
 
 
 	fclose(conf);
@@ -730,6 +732,7 @@ int fann_create_train_meta(struct fann *ann, const char *configuration_file)
   for (i=0;i < ann->total_connections;i++) {
 		if(fscanf(conf, "(" FANNSCANF ") ", &prev_train_slopes[i]) != 1)
     {
+      printf("Error loading trainmetadata\n");
       return 0;
     }
   }
@@ -740,9 +743,16 @@ int fann_create_train_meta(struct fann *ann, const char *configuration_file)
   for (i=0;i < ann->total_connections;i++) {
 		if(fscanf(conf, "(" FANNSCANF ") ", &prev_steps[i]) != 1)
     {
+      printf("Error loading trainmetadata\n");
       return 0;
     }
   }
+  //printf("Loading old sarprop_epoch\n");
+	if(fscanf(conf, "sarprop_epoch=%u\n",&ann->sarprop_epoch) != 1) {
+      ann->sarprop_epoch = 0;
+      return 0;
+  }
+  return 0;
 
 }
 

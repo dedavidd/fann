@@ -147,7 +147,19 @@ float fann_train_epoch_irpropm(struct fann *ann, struct fann_train_data *data)
 		fann_update_slopes_batch(ann, ann->first_layer + 1, ann->last_layer - 1);
 	}
 
-	fann_update_weights_irpropm(ann, 0, ann->total_connections);
+  switch (ann->training_algorithm)
+  {
+      case FANN_TRAIN_RPROP:
+          fann_update_weights_irpropm(ann, 0, ann->total_connections);
+          break;
+      case FANN_TRAIN_RMSPROP:
+	        ann->sarprop_epoch += 1;
+          fann_update_weights_rmsprop(ann, 0, ann->total_connections);
+          break;
+      default:
+          break;
+          
+  }
 
 	return fann_get_MSE(ann);
 }
@@ -233,6 +245,7 @@ FANN_EXTERNAL float FANN_API fann_train_epoch(struct fann *ann, struct fann_trai
 	case FANN_TRAIN_QUICKPROP:
 		return fann_train_epoch_quickprop(ann, data);
 	case FANN_TRAIN_RPROP:
+	case FANN_TRAIN_RMSPROP:
 		return fann_train_epoch_irpropm(ann, data);
 	case FANN_TRAIN_SARPROP:
 		return fann_train_epoch_sarprop(ann, data);
