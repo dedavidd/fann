@@ -535,6 +535,8 @@ void fann_update_slopes_batch(struct fann *ann, struct fann_layer *layer_begin,
 	}
 }
 
+#endif
+
 /* INTERNAL FUNCTION
    Clears arrays used for training before a new training session.
    Also creates the arrays that do not exist yet.
@@ -600,6 +602,8 @@ void fann_clear_train_arrays(struct fann *ann)
 		memset(ann->prev_train_slopes, 0, (ann->total_connections_allocated) * sizeof(fann_type));
 	}
 }
+
+#ifndef FIXEDFANN
 
 /* INTERNAL FUNCTION
    Update weights for batch training
