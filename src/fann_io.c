@@ -691,7 +691,9 @@ struct fann *fann_create_from_fd(FILE * conf, const char *configuration_file)
 		connected_neurons[i] = first_neuron + input_neuron;
 	}
 
+#ifndef FIXEDFANN
   fann_create_train_meta(ann, configuration_file);
+#endif
 #ifdef DEBUG
 	printf("output\n");
 #endif
@@ -700,6 +702,7 @@ struct fann *fann_create_from_fd(FILE * conf, const char *configuration_file)
 
 
 
+#ifndef FIXEDFANN
 /* INTERNAL FUNCTION
    loadtraindata from a configuration file descriptor.
  */
@@ -755,6 +758,7 @@ int fann_create_train_meta(struct fann *ann, const char *configuration_file)
   return 0;
 
 }
+#endif
 
 /* INTERNAL FUNCTION
    Create a network from a configuration file descriptor. (backward compatible read of version 1.1 files)

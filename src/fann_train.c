@@ -535,7 +535,6 @@ void fann_update_slopes_batch(struct fann *ann, struct fann_layer *layer_begin,
 	}
 }
 
-#endif
 
 /* INTERNAL FUNCTION
    Clears arrays used for training before a new training session.
@@ -603,7 +602,6 @@ void fann_clear_train_arrays(struct fann *ann)
 	}
 }
 
-#ifndef FIXEDFANN
 
 /* INTERNAL FUNCTION
    Update weights for batch training
