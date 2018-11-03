@@ -731,16 +731,16 @@ void fann_update_weights_rmsprop(struct fann *ann, unsigned int first_weight, un
 
 	//const float learning_rate = ann->learning_rate/sqrt(epoch+1);
 	const float learning_rate = ann->learning_rate;
-  float beta1 = 0.9;
+  float beta1 = 0.8;
   float beta2 = 0.999;
   float corr_Sdw = 1.0;
   float corr_Vdw = 1.0;
   if (epoch < 1000) {
       for (int jjj=0;jjj<epoch;jjj++) {
-          corr_Sdw *= beta1;
+          //corr_Sdw *= beta1;
           corr_Vdw *= beta2;
       }
-      corr_Sdw = 1.0/(1.0 - corr_Sdw);
+      //corr_Sdw = 1.0/(1.0 - corr_Sdw);
       corr_Vdw = 1.0/(1.0 - corr_Vdw);
   }
 

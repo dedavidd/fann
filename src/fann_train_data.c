@@ -270,6 +270,10 @@ FANN_EXTERNAL void FANN_API fann_train_on_data(struct fann *ann, struct fann_tra
 	printf("Training with %s\n", FANN_TRAIN_NAMES[ann->training_algorithm]);
 #endif
 
+	if (ann->training_algorithm == FANN_TRAIN_RMSPROP && ann->prev_train_slopes!=NULL) {
+		memset(ann->prev_train_slopes, 0, (ann->total_connections_allocated) * sizeof(fann_type));
+  }
+
 	if(epochs_between_reports && ann->callback == NULL)
 	{
 		printf("Max epochs %8d. Desired error: %.10f.\n", max_epochs, desired_error);
