@@ -339,7 +339,9 @@ int fann_save_internal_fd(struct fann *ann, FILE * conf, const char *configurati
 	}
 	fprintf(conf, "\n");
 
-  fann_save_train_meta(ann, configuration_file);
+  if (ann->autosavemeta) {
+    fann_save_train_meta(ann, configuration_file);
+  }
 	return calculated_decimal_point;
 }
 
